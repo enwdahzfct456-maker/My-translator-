@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Smart Translator - Kurdish, English, Arabic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 2rem;
+            padding: 1.8rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #0f2027;
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .sub {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 2rem;
+            font-size: 0.85rem;
+        }
+
+        .direction-box {
+            background: #f0f4f8;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .direction-label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #2d3748;
+        }
+
+        select, textarea, button {
+            width: 100%;
+            padding: 0.8rem;
+            margin-top: 0.5rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 0.8rem;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 110px;
+        }
+
+        button {
+            background: #2c5364;
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background: #1f3a44;
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .result {
+            background: #e2e8f0;
+            border-radius: 0.8rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 80px;
+        }
+
+        .result-label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #2d3748;
+        }
+
+        .loading {
+            text-align: center;
+            color: #2c5364;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .note {
+            font-size: 0.75rem;
+            color: #718096;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #a0aec0;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Live Translator</h1>
+        <div class="sub">Kurdish ⟷ English | Kurdish ⟷ Arabic (real translation engine)</div>
+
+        <div class="direction-box">
+            <div class="direction-label">🔁 Select direction:</div>
+            <select id="direction">
+                <option value="ku|en">Kurdish → English</option>
+                <option value="en|ku">English → Kurdish</option>
+                <option value="ku|ar">Kurdish → Arabic</option>
+                <option value="ar|ku">Arabic → Kurdish</option>
+            </select>
+        </div>
+
+        <div class="direction-box">
+            <div class="direction-label">📝 Text to translate:</div>
+            <textarea id="inputText" placeholder="Write or paste your text here..."></textarea>
+            <button id="translateBtn">✨ Translate now</button>
+        </div>
+
+        <div>
+            <div class="result-label">🔽 Translation:</div>
+            <div id="result" class="result">Waiting for translation...</div>
+            <div id="loadingMsg" class="loading"></div>
+        </div>
+        <div class="note">
+            ✅ Powered by MyMemory API (free, real translation).<br>
+            💡 Works with sentences, not just single words. No need to add dictionary.
+        </div>
+    </div>
+    <footer>Offline-ready? No — but works anywhere with internet on mobile.</footer>
+
+    <script>
+        const translateBtn = document.getElementById('translateBtn');
+        const inputText = document.getElementById('inputText');
+        const direction = document.getElementById('direction');
+        const resultDiv = document.getElementById('result');
+        const loadingMsg = document.getElementById('loadingMsg');
+
+        // Helper: map our UI direction codes to MyMemory language codes
+        function getLangCodes(directionValue) {
+            const [from, to] = directionValue.split('|');
+            let fromLang = from;
+            let toLang = to;
+
+            // MyMemory codes: English 'en', Arabic 'ar', Kurdish (Sorani) 'ku' or 'ckb'
+            if (fromLang === 'ku') fromLang = 'ku';
+            if (toLang === 'ku') toLang = 'ku';
+            if (fromLang === 'ar') fromLang = 'ar';
+            if (toLang === 'ar') toLang = 'ar';
+            if (fromLang === 'en') fromLang = 'en';
+            if (toLang === 'en') toLang = 'en';
+            return { from: fromLang, to: toLang };
+        }
+
+        async function translateText(text, fromLang, toLang) {
+            // MyMemory API URL (free, no key required)
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}&de=user@example.org`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data && data.responseData && data.responseData.translatedText) {
+                    let translated = data.responseData.translatedText;
+                    // Sometimes MyMemory returns the same text if no translation
+                    if (translated.toLowerCase() === text.toLowerCase()) {
+                        return "⚠️ No translation found (or text already same).";
+                    }
+                    return translated;
+                } else {
+                    return "⚠️ Translation failed. Please try again.";
+                }
+            } catch (error) {
+                console.error(error);
+                return "⚠️ Network error. Check your internet connection.";
+            }
+        }
+
+        async function handleTranslate() {
+            const text = inputText.value.trim();
+            if (text === "") {
+                resultDiv.innerHTML = "⚠️ Please enter some text.";
+                return;
+            }
+
+            const dirValue = direction.value;
+            const { from, to } = getLangCodes(dirValue);
+
+            // Disable button during translation
+            translateBtn.disabled = true;
+            translateBtn.textContent = "Translating...";
+            loadingMsg.innerHTML = "Contacting translation server...";
+
+            const translated = await translateText(text, from, to);
+            resultDiv.innerHTML = translated;
+            
+            translateBtn.disabled = false;
+            translateBtn.textContent = "✨ Translate now";
+            loadingMsg.innerHTML = "";
+        }
+
+        translateBtn.addEventListener('click', handleTranslate);
+        
+        // Optional: allow Enter (Ctrl+Enter for new line, but simple)
+        inputText.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                handleTranslate();
+            }
+        });
+    </script>
+</body>
+</html>
