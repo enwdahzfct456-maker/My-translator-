@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ZAKARIA Z.99 | Online Channel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+            background: #0a0f1c;
+            color: #eef2ff;
+            padding: 1.5rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            background: linear-gradient(120deg, #f5b042, #e08e2e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            font-size: 2rem;
+        }
+
+        .header p {
+            color: #cbd5e1;
+            margin-top: 0.3rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .video-player {
+            background: #111827;
+            border-radius: 2rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+        .video-frame {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 1.2rem;
+            border: none;
+            background: #000;
+        }
+
+        .playlist {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .video-card {
+            background: #1e293b;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            width: 220px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #334155;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+            border-color: #f5b042;
+        }
+
+        .video-card img {
+            width: 100%;
+            border-radius: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .video-card h4 {
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .add-section {
+            background: #111827;
+            border-radius: 1.8rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .add-section h3 {
+            margin-bottom: 1rem;
+            color: #f5b042;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            border-radius: 2rem;
+            border: none;
+            font-size: 1rem;
+        }
+
+        input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+        }
+
+        button {
+            background: #f5b042;
+            color: #0f172a;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .delete-btn {
+            background: #7f1a1a;
+            color: white;
+            margin-top: 0.5rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            color: #6c86a3;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎬 ZAKARIA Z.99</h1>
+        <p>Watch, share & add your favorite videos</p>
+    </div>
+
+    <div class="video-player">
+        <iframe id="mainVideo" class="video-frame" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Video player" frameborder="0" allowfullscreen></iframe>
+    </div>
+
+    <div id="playlistContainer" class="playlist"></div>
+
+    <div class="add-section">
+        <h3>➕ Add New Video</h3>
+        <input type="text" id="videoTitle" placeholder="Video title (e.g. Kurdish music)">
+        <input type="text" id="videoUrl" placeholder="YouTube or embed URL (e.g. https://youtu.be/... or https://.../embed/...)">
+        <button id="addVideoBtn">Add to playlist</button>
+        <button id="resetDefaultBtn" class="delete-btn">Reset to default videos</button>
+    </div>
+    <footer>⚡ Your custom videos are saved locally. All videos belong to their owners.</footer>
+</div>
+
+<script>
+    let videoList = [];
+
+    function getEmbedUrl(url) {
+        let videoId = null;
+        if (url.includes('youtube.com/watch?v=')) {
+            videoId = url.split('v=')[1]?.split('&')[0];
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        } else if (url.includes('/embed/')) {
+            return url;
+        }
+        if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+        return url;
+    }
+
+    function loadVideos() {
+        const stored = localStorage.getItem('zakaria_channel_videos');
+        if (stored) {
+            videoList = JSON.parse(stored);
+        } else {
+            videoList = [
+                { title: "Kurdish Nature", embed: "https://www.youtube.com/embed/7dPp0J8kVEY" },
+                { title: "Learn Web Design", embed: "https://www.youtube.com/embed/UB1O30fR-EE" },
+                { title: "Modern Music", embed: "https://www.youtube.com/embed/fJ9rUzIMcZQ" }
+            ];
+        }
+        renderPlaylist();
+    }
+
+    function saveVideos() {
+        localStorage.setItem('zakaria_channel_videos', JSON.stringify(videoList));
+    }
+
+    function renderPlaylist() {
+        const container = document.getElementById('playlistContainer');
+        if (videoList.length === 0) {
+            container.innerHTML = '<p style="color:#aaa;">No videos yet. Add one above ⬆️</p>';
+            return;
+        }
+        let html = '';
+        videoList.forEach((video, index) => {
+            html += `
+                <div class="video-card" data-index="${index}">
+                    <img src="https://img.youtube.com/vi/${getYoutubeId(video.embed)}/mqdefault.jpg" alt="thumbnail" onerror="this.src='https://placehold.co/320x180?text=No+Image'">
+                    <h4>${escapeHtml(video.title)}</h4>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        document.querySelectorAll('.video-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                const idx = parseInt(card.dataset.index);
+                if (!isNaN(idx) && videoList[idx]) {
+                    document.getElementById('mainVideo').src = videoList[idx].embed;
+                }
+            });
+        });
+    }
+
+    function getYoutubeId(embedUrl) {
+        const match = embedUrl.match(/embed\/([a-zA-Z0-9_-]+)/);
+        return match ? match[1] : 'dQw4w9WgXcQ';
+    }
+
+    function addVideo() {
+        let title = document.getElementById('videoTitle').value.trim();
+        let url = document.getElementById('videoUrl').value.trim();
+        if (!title || !url) {
+            alert("Please enter both title and URL.");
+            return;
+        }
+        const embed = getEmbedUrl(url);
+        videoList.push({ title: title, embed: embed });
+        saveVideos();
+        renderPlaylist();
+        document.getElementById('videoTitle').value = '';
+        document.getElementById('videoUrl').value = '';
+        alert("Video added successfully!");
+    }
+
+    function resetToDefault() {
+        videoList = [
+            { title: "Kurdish Nature", embed: "https://www.youtube.com/embed/7dPp0J8kVEY" },
+            { title: "Learn Web Design", embed: "https://www.youtube.com/embed/UB1O30fR-EE" },
+            { title: "Modern Music", embed: "https://www.youtube.com/embed/fJ9rUzIMcZQ" }
+        ];
+        saveVideos();
+        renderPlaylist();
+        document.getElementById('mainVideo').src = videoList[0].embed;
+        alert("Reset to default videos.");
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    document.getElementById('addVideoBtn').addEventListener('click', addVideo);
+    document.getElementById('resetDefaultBtn').addEventListener('click', resetToDefault);
+    loadVideos();
+</script>
+</body>
+</html>
